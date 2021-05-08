@@ -5,7 +5,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 
 from plotmanager.library.commands import plots
-from plotmanager.library.utilities.processes import is_windows, start_process, identify_drive
+from plotmanager.library.utilities.processes import get_system_drives, identify_drive, is_windows, start_process
 from plotmanager.library.utilities.objects import Job, Work
 from plotmanager.library.utilities.log import get_log_file_name
 from plotmanager.library.utilities.exceptions import TerminationException
@@ -23,13 +23,13 @@ def get_target_directories(job, running_work: List[Work]):
     job_offset = job.total_completed + job.total_running
     destination_directory = job.destination_directory
     temporary2_directory = job.temporary2_directory
-
+    drives = get_system_drives()
     if isinstance(job.destination_directory, list):
         tries = 0
         while True:
             tries += 1
             destination_directory = job.destination_directory[job_offset % len(job.destination_directory)]
-            destination_drive = identify_drive(destination_directory)
+            destination_drive = identify_drive(destination_directory, drives)
             usage = psutil.disk_usage(destination_directory)
             
             same_drive_work = [w for w in running_work if w.temporary_drive == destination_drive]
@@ -141,6 +141,7 @@ def monitor_jobs_to_start(jobs, running_work, max_concurrent, next_job_work, chi
 
 def start_work(job: Job, chia_location, log_directory, running_work: List[Work]):
     logging.info(f'Starting new plot for job: {job.name}')
+    drives = get_system_drives()
     nice_val = 10
     if is_windows():
         nice_val = psutil.NORMAL_PRIORITY_CLASS
@@ -156,9 +157,9 @@ def start_work(job: Job, chia_location, log_directory, running_work: List[Work])
     work.log_file = log_file_path
     work.datetime_start = now
     work.work_id = job.current_work_id
-    work.destination_drive = identify_drive(destination_directory)
-    work.temporary_drive = identify_drive(job.temporary_directory)
-    work.temporary2_drive = identify_drive(job.temporary2_directory)
+    work.destination_drive = identify_drive(destination_directory, drives)
+    work.temporary_drive = identify_drive(job.temporary_directory, drives)
+    work.temporary2_drive = identify_drive(job.temporary2_directory, drives)
     job.current_work_id += 1
 
     if job.temporary2_destination_sync:
