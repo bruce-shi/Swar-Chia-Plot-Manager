@@ -1,15 +1,17 @@
 import logging
 import psutil
-
+from typing import  List, Optional
 from copy import deepcopy
 from datetime import datetime, timedelta
 
 from plotmanager.library.commands import plots
-from plotmanager.library.utilities.processes import is_windows, start_process
+from plotmanager.library.utilities.processes import is_windows, start_process, identify_drive
 from plotmanager.library.utilities.objects import Job, Work
 from plotmanager.library.utilities.log import get_log_file_name
+from plotmanager.library.utilities.exceptions import TerminationException
 
-
+#TODO handle different k size
+plot_size = 108877420954
 def has_active_jobs_and_work(jobs):
     for job in jobs:
         if job.total_completed < job.max_plots:
@@ -17,14 +19,27 @@ def has_active_jobs_and_work(jobs):
     return False
 
 
-def get_target_directories(job):
+def get_target_directories(job, running_work: List[Work]):
     job_offset = job.total_completed + job.total_running
-
     destination_directory = job.destination_directory
     temporary2_directory = job.temporary2_directory
 
     if isinstance(job.destination_directory, list):
-        destination_directory = job.destination_directory[job_offset % len(job.destination_directory)]
+        tries = 0
+        while True:
+            tries += 1
+            destination_directory = job.destination_directory[job_offset % len(job.destination_directory)]
+            destination_drive = identify_drive(destination_directory)
+            usage = psutil.disk_usage(destination_directory)
+            
+            same_drive_work = [w for w in running_work if w.temporary_drive == destination_drive]
+            reserved_disk_usage = len(same_drive_work) * plot_size
+            disk_free = usage.free - reserved_disk_usage
+            if disk_free >= plot_size:
+                break
+            if tries > len(job.destination_directory):
+                raise TerminationException("not enough free disk space")
+
     if isinstance(job.temporary2_directory, list):
         temporary2_directory = job.temporary2_directory[job_offset % len(job.temporary2_directory)]
 
@@ -116,7 +131,7 @@ def monitor_jobs_to_start(jobs, running_work, max_concurrent, next_job_work, chi
         if job.stagger_minutes:
             next_job_work[job.name] = datetime.now() + timedelta(minutes=job.stagger_minutes)
             logging.info(f'Calculating new job stagger time. Next stagger kickoff: {next_job_work[job.name]}')
-        job, work = start_work(job=job, chia_location=chia_location, log_directory=log_directory)
+        job, work = start_work(job=job, chia_location=chia_location, log_directory=log_directory, running_work=running_work)
         jobs[i] = deepcopy(job)
         next_log_check = datetime.now()
         running_work[work.pid] = work
@@ -124,7 +139,7 @@ def monitor_jobs_to_start(jobs, running_work, max_concurrent, next_job_work, chi
     return jobs, running_work, next_job_work, next_log_check
 
 
-def start_work(job, chia_location, log_directory):
+def start_work(job: Job, chia_location, log_directory, running_work: List[Work]):
     logging.info(f'Starting new plot for job: {job.name}')
     nice_val = 10
     if is_windows():
@@ -141,7 +156,9 @@ def start_work(job, chia_location, log_directory):
     work.log_file = log_file_path
     work.datetime_start = now
     work.work_id = job.current_work_id
-
+    work.destination_drive = identify_drive(destination_directory)
+    work.temporary_drive = identify_drive(job.temporary_directory)
+    work.temporary2_drive = identify_drive(job.temporary2_directory)
     job.current_work_id += 1
 
     if job.temporary2_destination_sync:
