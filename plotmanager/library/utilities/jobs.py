@@ -19,7 +19,7 @@ def has_active_jobs_and_work(jobs):
     return False
 
 
-def get_target_directories(job, running_work: List[Work]):
+def get_target_directories(job, running_work):
     job_offset = job.total_completed + job.total_running
     destination_directory = job.destination_directory
     temporary2_directory = job.temporary2_directory
@@ -32,7 +32,7 @@ def get_target_directories(job, running_work: List[Work]):
             destination_drive = identify_drive(destination_directory, drives)
             usage = psutil.disk_usage(destination_directory)
             
-            same_drive_work = [w for w in running_work if w.temporary_drive == destination_drive]
+            same_drive_work = [w for _, w in running_work.items() if w.temporary_drive == destination_drive]
             reserved_disk_usage = len(same_drive_work) * plot_size
             disk_free = usage.free - reserved_disk_usage
             if disk_free >= plot_size:
@@ -139,7 +139,7 @@ def monitor_jobs_to_start(jobs, running_work, max_concurrent, next_job_work, chi
     return jobs, running_work, next_job_work, next_log_check
 
 
-def start_work(job: Job, chia_location, log_directory, running_work: List[Work]):
+def start_work(job: Job, chia_location, log_directory, running_work):
     logging.info(f'Starting new plot for job: {job.name}')
     drives = get_system_drives()
     nice_val = 10
