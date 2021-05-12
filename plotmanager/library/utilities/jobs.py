@@ -27,22 +27,23 @@ def get_target_directories(job, running_work):
     if isinstance(job.destination_directory, list):
         tries = 0
         while True:
-            tries += 1
-            destination_directory = job.destination_directory[job_offset % len(job.destination_directory)]
+            destination_directory = job.destination_directory[(job_offset + tries) % len(job.destination_directory)]
             destination_drive = identify_drive(destination_directory, drives)
             usage = psutil.disk_usage(destination_directory)
             
             same_drive_work = [w for _, w in running_work.items() if w.temporary_drive == destination_drive]
             reserved_disk_usage = len(same_drive_work) * plot_size
             disk_free = usage.free - reserved_disk_usage
+
+            tries += 1
+
             if disk_free >= plot_size:
                 break
             if tries > len(job.destination_directory):
                 raise TerminationException("not enough free disk space")
-
+    
     if isinstance(job.temporary2_directory, list):
         temporary2_directory = job.temporary2_directory[job_offset % len(job.temporary2_directory)]
-
     return destination_directory, temporary2_directory
 
 
