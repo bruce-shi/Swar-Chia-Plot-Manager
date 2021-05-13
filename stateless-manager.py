@@ -69,19 +69,22 @@ while has_active_jobs_and_work(jobs):
         log_directory=log_directory,
         next_log_check=next_log_check,
     )
-    events = []
-    for _, work in running_work.items():
-        pj = vars(work)
-        del pj['job']
-        del pj['phase_times']
-        if pj['datetime_start']:
-            pj['datetime_start'] = pj['datetime_start'].timestamp()
-        if pj.get('datetime_end'):
-            pj['datetime_end'] = pj['datetime_end'].timestamp()
-        event = Event(
-            "PlottingJobs", pj(work)
-        )
-        events.append(event)
-    response = event_client.send_batch(events)
+    try:
+        events = []
+        for _, work in running_work.items():
+            pj = vars(work)
+            del pj['job']
+            del pj['phase_times']
+            if pj['datetime_start']:
+                pj['datetime_start'] = pj['datetime_start'].timestamp()
+            if pj.get('datetime_end'):
+                pj['datetime_end'] = pj['datetime_end'].timestamp()
+            event = Event(
+                "PlottingJobs", pj(work)
+            )
+            events.append(event)
+        response = event_client.send_batch(events)
+    except Exception as e:
+        logging.error(e)
     logging.info(f'Sleeping for {manager_check_interval} seconds.')
     time.sleep(manager_check_interval)
