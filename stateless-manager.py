@@ -76,6 +76,7 @@ while has_active_jobs_and_work(jobs):
             pj = {
                 'datetime_start': work.datetime_start.timestamp(),
                 'pid': work.pid,
+                'id': work.plot_id[0:6],
                 'plot_id': work.plot_id,
                 'work_id': work.work_id,
                 'phase_times': work.phase_times,
