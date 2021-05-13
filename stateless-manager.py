@@ -72,21 +72,18 @@ while has_active_jobs_and_work(jobs):
     try:
         events = []
         for _, work in running_work.items():
-            pj = vars(work)
-            if 'job' in pj:
-                del pj['job']
-            if 'phase_times' in pj:
-                del pj['phase_times']
-            if 'datetime_start' in pj:
-                pj['datetime_start'] = pj['datetime_start'].timestamp()
-            if 'datetime_end' in pj:
-                pj['datetime_end'] = pj['datetime_end'].timestamp()
-            if 'progress' in pj and pj['progress']:
-                pj['progress'] = float(pj['progress'].replace('%', ''))
+            pj = {
+                'datetime_start': work.datetime_start.timestamp(),
+                'pid': work.pid,
+                'plot_id': work.plot_id,
+                'work_id': work.work_id,
+                'phase_times': work.phase_times,
+                'current_phase': work.current_phase,
+                'progress': float(work.progress.replace('%', ''))
+            }
             event = Event(
-                "ChiaPlottingJobs", pj(work)
+                "ChiaPlottingJobs", pj
             )
-
             events.append(event)
         response = event_client.send_batch(events)
     except Exception as e:
