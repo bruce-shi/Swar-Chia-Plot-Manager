@@ -81,9 +81,12 @@ while has_active_jobs_and_work(jobs):
                 pj['datetime_start'] = pj['datetime_start'].timestamp()
             if 'datetime_end' in pj:
                 pj['datetime_end'] = pj['datetime_end'].timestamp()
+            if 'progress' in pj and pj['progress']:
+                pj['progress'] = int(pj['progress'].replace('%', ''))
             event = Event(
-                "PlottingJobs", pj(work)
+                "ChiaPlottingJobs", pj(work)
             )
+
             events.append(event)
         response = event_client.send_batch(events)
     except Exception as e:
