@@ -82,7 +82,7 @@ while has_active_jobs_and_work(jobs):
             if 'datetime_end' in pj:
                 pj['datetime_end'] = pj['datetime_end'].timestamp()
             if 'progress' in pj and pj['progress']:
-                pj['progress'] = int(pj['progress'].replace('%', ''))
+                pj['progress'] = float(pj['progress'].replace('%', ''))
             event = Event(
                 "ChiaPlottingJobs", pj(work)
             )
