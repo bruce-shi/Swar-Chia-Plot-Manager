@@ -7,12 +7,16 @@ from plotmanager.library.parse.configuration import get_config_info
 from plotmanager.library.utilities.jobs import has_active_jobs_and_work, load_jobs, monitor_jobs_to_start
 from plotmanager.library.utilities.log import check_log_progress
 from plotmanager.library.utilities.processes import get_running_plots
+from newrelic_telemetry_sdk import Event, EventClient
 
 
 chia_location, log_directory, config_jobs, manager_check_interval, max_concurrent, progress_settings, \
-    notification_settings, debug_level, view_settings = get_config_info()
+    notification_settings, debug_level, view_settings, monitor_setting = get_config_info()
 
-logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=debug_level)
+event_client = EventClient(monitor_setting.get("insert_key"))
+
+logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S', level=debug_level)
 
 logging.info(f'Debug Level: {debug_level}')
 logging.info(f'Chia Location: {chia_location}')
@@ -43,7 +47,8 @@ for job in jobs:
     if not max_date:
         continue
     next_job_work[job.name] = max_date + timedelta(minutes=job.stagger_minutes)
-    logging.info(f'{job.name} Found. Setting next stagger date to {next_job_work[job.name]}')
+    logging.info(
+        f'{job.name} Found. Setting next stagger date to {next_job_work[job.name]}')
 
 logging.info(f'Starting loop.')
 while has_active_jobs_and_work(jobs):
@@ -64,6 +69,19 @@ while has_active_jobs_and_work(jobs):
         log_directory=log_directory,
         next_log_check=next_log_check,
     )
-
+    events = []
+    for _, work in running_work.items():
+        pj = vars(work)
+        del pj['job']
+        del pj['phase_times']
+        if pj['datetime_start']:
+            pj['datetime_start'] = pj['datetime_start'].timestamp()
+        if pj.get('datetime_end'):
+            pj['datetime_end'] = pj['datetime_end'].timestamp()
+        event = Event(
+            "PlottingJobs", pj(work)
+        )
+        events.append(event)
+    response = event_client.send_batch(events)
     logging.info(f'Sleeping for {manager_check_interval} seconds.')
     time.sleep(manager_check_interval)
