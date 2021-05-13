@@ -8,13 +8,14 @@ from plotmanager.library.utilities.jobs import has_active_jobs_and_work, load_jo
 from plotmanager.library.utilities.log import check_log_progress
 from plotmanager.library.utilities.processes import get_running_plots
 from newrelic_telemetry_sdk import Event, EventClient
+import socket
 
 
 chia_location, log_directory, config_jobs, manager_check_interval, max_concurrent, progress_settings, \
     notification_settings, debug_level, view_settings, monitor_setting = get_config_info()
 
 event_client = EventClient(monitor_setting.get("insert_key"))
-
+host = socket.gethostname()
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S', level=debug_level)
 
@@ -79,7 +80,8 @@ while has_active_jobs_and_work(jobs):
                 'work_id': work.work_id,
                 'phase_times': work.phase_times,
                 'current_phase': work.current_phase,
-                'progress': float(work.progress.replace('%', ''))
+                'progress': float(work.progress.replace('%', '')),
+                'host': host
             }
             event = Event(
                 "ChiaPlottingJobs", pj
