@@ -73,6 +73,7 @@ while has_active_jobs_and_work(jobs):
     try:
         events = []
         for _, work in running_work.items():
+            elapsed_time = (datetime.now() - work.datetime_start).seconds
             pj = {
                 'datetime_start': work.datetime_start.timestamp(),
                 'pid': work.pid,
@@ -82,7 +83,8 @@ while has_active_jobs_and_work(jobs):
                 'phase_times': work.phase_times,
                 'current_phase': work.current_phase,
                 'progress': float(work.progress.replace('%', '')),
-                'host': host
+                'host': host,
+                'elapsed_time':  elapsed_time
             }
             for phase, seconds in work.phase_times.items():
                 pj[f'phase-{phase}-time'] = seconds
