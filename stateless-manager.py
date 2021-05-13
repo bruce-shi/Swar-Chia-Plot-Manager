@@ -83,8 +83,9 @@ while has_active_jobs_and_work(jobs):
                 'progress': float(work.progress.replace('%', '')),
                 'host': host
             }
-            for phase, seconds in work.phase_times:
-                pj[f'phase-{phase}-time'] = seconds
+            for phase, seconds in work.phase_times.items():
+                pj[f'phase-${phase}-time'] = seconds
+                pass
             event = Event(
                 "ChiaPlottingJobs", pj
             )
