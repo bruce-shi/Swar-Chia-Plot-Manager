@@ -73,11 +73,13 @@ while has_active_jobs_and_work(jobs):
         events = []
         for _, work in running_work.items():
             pj = vars(work)
-            del pj['job']
-            del pj['phase_times']
-            if pj['datetime_start']:
+            if 'job' in pj:
+                del pj['job']
+            if 'phase_times' in pj:
+                del pj['phase_times']
+            if 'datetime_start' in pj:
                 pj['datetime_start'] = pj['datetime_start'].timestamp()
-            if pj.get('datetime_end'):
+            if 'datetime_end' in pj:
                 pj['datetime_end'] = pj['datetime_end'].timestamp()
             event = Event(
                 "PlottingJobs", pj(work)
