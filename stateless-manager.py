@@ -74,27 +74,26 @@ while has_active_jobs_and_work(jobs):
     try:
         events = []
         for _, work in running_work.items():
-            if work.plot_id:
-                elapsed_time = (datetime.now() - work.datetime_start).seconds
-                pj = {
-                    'datetime_start': work.datetime_start.timestamp(),
-                    'pid': work.pid,
-                    'id': work.plot_id[0:6],
-                    'plot_id': work.plot_id,
-                    'work_id': work.work_id,
-                    'phase_times': work.phase_times,
-                    'current_phase': work.current_phase,
-                    'progress': float(work.progress.replace('%', '')),
-                    'host': host,
-                    'elapsed_time':  elapsed_time
-                }
-                if work.phase_times:
-                    for phase, seconds in work.phase_times.items():
-                        pj[f'phase-{phase}-time'] = seconds
-                event = Event(
-                    "ChiaPlottingJobs", pj
-                )
-                events.append(event)
+            elapsed_time = (datetime.now() - work.datetime_start).seconds
+            pj = {
+                'datetime_start': work.datetime_start.timestamp(),
+                'pid': work.pid,
+                'id': f"{host}[{work.pid}]",
+                'plot_id': work.plot_id,
+                'work_id': work.work_id,
+                'phase_times': work.phase_times,
+                'current_phase': work.current_phase,
+                'progress': float(work.progress.replace('%', '')),
+                'host': host,
+                'elapsed_time':  elapsed_time
+            }
+            if work.phase_times:
+                for phase, seconds in work.phase_times.items():
+                    pj[f'phase-{phase}-time'] = seconds
+            event = Event(
+                "ChiaPlottingJobs", pj
+            )
+            events.append(event)
         response = event_client.send_batch(events)
     except Exception as e:
         traceback.print_exc()
