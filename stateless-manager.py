@@ -88,9 +88,9 @@ while has_active_jobs_and_work(jobs):
                     'host': host,
                     'elapsed_time':  elapsed_time
                 }
-                for phase, seconds in work.phase_times.items():
-                    pj[f'phase-{phase}-time'] = seconds
-                    pass
+                if work.phase_times:
+                    for phase, seconds in work.phase_times.items():
+                        pj[f'phase-{phase}-time'] = seconds
                 event = Event(
                     "ChiaPlottingJobs", pj
                 )
