@@ -31,7 +31,7 @@ def get_target_directories(job, running_work):
             destination_drive = identify_drive(destination_directory, drives)
             usage = psutil.disk_usage(destination_directory)
             
-            same_drive_work = [w for _, w in running_work.items() if w.temporary_drive == destination_drive]
+            same_drive_work = [w for _, w in running_work.items() if w.destination_drive == destination_drive]
             reserved_disk_usage = len(same_drive_work) * plot_size
             disk_free = usage.free - reserved_disk_usage
 
